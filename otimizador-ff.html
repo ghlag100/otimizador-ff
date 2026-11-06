@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Otimizador FF</title>
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);--bg1:#14040a;--bg2:#4a0d1a;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--text:#fff4f0;--mute:#c9a3a8;--red:#ff2d3d;--orange:#ffffff;--red2:#a80016;--green:#3ddc84}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg1);background-image:radial-gradient(circle at 50% -10%,var(--bg2),var(--bg1) 70%);background-attachment:fixed;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;overflow-x:hidden}
+#trail{position:fixed;inset:0;pointer-events:none;z-index:50}
+.app{width:100%;max-width:440px;padding:20px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+.tab{display:none;animation:in .45s both}.tab.on{display:block}
+.head{display:flex;justify-content:space-between;align-items:center}
+.brand{font-weight:800;letter-spacing:.14em;font-size:13px;color:var(--orange)}
+.dev{font-size:22px;font-weight:800;margin-top:2px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.b{font-size:11.5px;padding:6px 11px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--mute);font-weight:600}
+.b.ok{color:var(--green);border-color:rgba(61,220,132,.4)}.b.hot{color:var(--orange);border-color:rgba(255,255,255,.45)}
+.gauge{position:relative;width:240px;height:240px;margin:16px auto 6px}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg);filter:drop-shadow(0 0 14px rgba(255,45,61,.55))}
+.gauge .mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.big{font-size:50px;font-weight:900;line-height:1}.big small{font-size:20px;color:var(--mute)}
+.sub{font-size:12px;color:var(--mute);margin-top:4px;letter-spacing:.08em}
+.state{margin-top:10px;padding:5px 12px;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:.1em;background:rgba(255,45,61,.18);color:var(--orange);border:1px solid rgba(255,255,255,.4)}
+.state.good{background:rgba(61,220,132,.15);color:var(--green);border-color:rgba(61,220,132,.45)}
+.gain{text-align:center;height:26px;font-weight:800;color:var(--green);opacity:0;transition:.5s;transform:translateY(6px)}.gain.on{opacity:1;transform:none}
+.btn{position:relative;overflow:hidden;width:100%;border:0;border-radius:18px;padding:19px;font-size:17px;font-weight:900;letter-spacing:.12em;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--red),var(--red2));box-shadow:0 8px 28px rgba(255,45,61,.45);transition:transform .12s}
+.btn:active{transform:scale(.96)}.btn:disabled{opacity:.75}
+.btn.glow{animation:pulse 2.2s infinite}
+@keyframes pulse{50%{box-shadow:0 8px 40px rgba(255,255,255,.8)}}
+.presets{display:flex;gap:8px;margin:14px 0 12px}
+.pre{flex:1;padding:11px 4px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:800;font-size:12px;cursor:pointer;position:relative;overflow:hidden;transition:.2s}
+.pre.on{border-color:var(--orange);background:rgba(255,255,255,.18);color:var(--orange)}
+.log{margin-top:12px;display:grid;gap:6px}
+.step{display:flex;gap:10px;font-size:12.5px;color:var(--mute);padding:8px 12px;border-radius:12px;background:var(--card);border:1px solid var(--line);opacity:.5;transition:.3s}
+.step.run{opacity:1;color:var(--text);border-color:var(--orange)}.step.done{opacity:1;color:var(--text)}
+.step .st{margin-left:auto;font-weight:800}.step.done .st{color:var(--green)}
+.sec{margin:22px 0 10px;font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--mute);display:flex;justify-content:space-between}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;animation:in .5s both}
+.card .l{font-size:11px;color:var(--mute);margin-top:6px;letter-spacing:.06em}.card .v{font-size:19px;font-weight:800;margin-top:2px}
+.bar{height:5px;border-radius:9px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--orange))}
+.row{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;padding:13px;margin-bottom:8px;border-radius:16px;background:var(--card);border:1px solid var(--line);cursor:pointer;transition:.2s}
+.row.on{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.1)}
+.row .ic{font-size:22px}.row .t{font-weight:700;font-size:14px}.row .d{font-size:11.5px;color:var(--mute);margin-top:2px}
+.row code{display:block;margin-top:4px;font-size:10px;color:#ff9aa4;opacity:.8;word-break:break-all}
+.row .tx{flex:1;min-width:0}
+.sw{width:46px;height:26px;border-radius:99px;background:rgba(255,255,255,.15);position:relative;flex:none;transition:.25s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.25s}
+.row.on .sw{background:linear-gradient(135deg,var(--red),var(--red2))}.row.on .sw::after{left:23px}
+.chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.chip{padding:7px 12px;border-radius:99px;border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--mute);position:relative;overflow:hidden}
+.chip.on{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border-color:transparent}
+.crow{padding:13px;margin-bottom:8px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.warn{border-color:rgba(255,45,61,.5)}
+.btn.scan{background:rgba(255,255,255,.06);border:1.5px solid #fff;box-shadow:0 0 22px rgba(255,255,255,.18);margin-bottom:12px;padding:16px;font-size:15px}
+.res{margin-top:12px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);animation:in .5s both}
+.rh{font-weight:900;font-size:17px;margin-bottom:8px}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--mute)}.kv b{color:var(--text)}
+.skip{margin-top:10px;font-size:11.5px;color:var(--mute);line-height:1.4}
+.na{opacity:.38}
+.tag{font-size:9.5px;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--mute);margin-left:6px;font-weight:700;white-space:nowrap}
+.games{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 12px;margin:12px 0 2px;scrollbar-width:none}
+.games::-webkit-scrollbar{display:none}
+.gm{position:relative;overflow:hidden;flex:none;width:94px;padding:12px 6px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-align:center;cursor:pointer;transition:.25s}
+.gm span{display:block;font-size:30px}.gm b{display:block;font-size:11px;margin-top:5px}
+.gm.on{border-color:#fff;background:linear-gradient(135deg,rgba(255,45,61,.38),rgba(168,0,22,.38));box-shadow:0 0 18px rgba(255,45,61,.5);transform:translateY(-3px)}
+.alert{margin-top:14px;padding:12px 14px;border-radius:14px;font-size:13px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.4);color:#ffe3e3}
+.note{text-align:center;font-size:11px;color:var(--mute);margin-top:20px}
+nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:calc(100% - 28px);max-width:412px;display:flex;gap:4px;padding:6px;border-radius:22px;background:rgba(30,6,12,.85);backdrop-filter:blur(14px);border:1px solid var(--line);z-index:20}
+nav button{flex:1;position:relative;overflow:hidden;border:0;background:none;color:var(--mute);padding:10px 0;border-radius:16px;font-size:11px;font-weight:800;letter-spacing:.08em;cursor:pointer;transition:.25s}
+nav button span{display:block;font-size:19px}nav button.on{background:linear-gradient(135deg,var(--red),var(--red2));color:#fff}
+.rp{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:rp .6s ease-out forwards;pointer-events:none}
+@keyframes rp{to{transform:scale(1);opacity:0}}
+@keyframes in{from{opacity:0;transform:translateY(14px)}}
+#intro{position:fixed;inset:0;z-index:100;background:radial-gradient(circle at 50% 40%,#5a0f20,#0d0206 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .7s,transform .7s}
+#intro.out{opacity:0;transform:scale(1.15);pointer-events:none}
+.logo{position:relative;width:130px;height:130px;display:flex;align-items:center;justify-content:center;font-size:62px}
+.logo::before,.logo::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--orange);animation:ring 2s infinite}
+.logo::after{animation-delay:1s;border-color:var(--red)}
+@keyframes ring{from{transform:scale(.6);opacity:1}to{transform:scale(1.8);opacity:0}}
+.logo i{font-style:normal;animation:fl 1.2s infinite alternate}
+@keyframes fl{to{transform:scale(1.15) rotate(-6deg);filter:drop-shadow(0 0 18px #ff2d3d)}}
+#intro h1{margin-top:26px;font-size:28px;letter-spacing:.3em;font-weight:900;background:linear-gradient(90deg,var(--red),var(--orange));-webkit-background-clip:text;background-clip:text;color:transparent;animation:in 1s both .3s}
+#intro p{margin-top:6px;font-size:12px;color:var(--mute);letter-spacing:.2em;animation:in 1s both .6s}
+.ld{margin-top:30px;width:180px;height:4px;border-radius:9px;background:rgba(255,255,255,.12);overflow:hidden}.ld i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--red),var(--orange));animation:ld 2.4s ease-in-out forwards}
+@keyframes ld{to{width:100%}}
+</style>
+</head>
+<body>
+<canvas id="trail"></canvas>
+<div id="intro"><div class="logo"><i>🔥</i></div><h1>OTIMIZADOR FF</h1><p>MODO MÁXIMO COM SHIZUKU</p><div class="ld"><i></i></div></div>
+
+<div class="app">
+ <!-- PAINEL -->
+ <section class="tab on" id="t0">
+  <div class="head"><div><div class="brand">OTIMIZADOR FF</div><div class="dev" id="dname">Meu Android</div></div><div style="font-size:30px">🔥</div></div>
+  <div class="badges"><span class="b hot" id="pfl">Perfil: Intermediário</span><span class="b ok">Shizuku ativo</span><span class="b ok">Free Fire instalado</span></div>
+  <div class="gauge" id="gauge"><svg viewBox="0 0 200 200"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2d3d"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs><circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="14"/><circle id="ring" cx="100" cy="100" r="86" fill="none" stroke="url(#g)" stroke-width="14" stroke-linecap="round" stroke-dasharray="540.4" stroke-dashoffset="540.4"/></svg>
+   <div class="mid"><div class="big"><span id="gb">0.0</span><small> GB</small></div><div class="sub">RAM LIVRE</div><div class="state" id="state">RAM BAIXA</div></div></div>
+  <div class="gain" id="gain"></div>
+  <button class="btn scan" id="scan">🔍 VARREDURA COMPLETA</button>
+  <div id="scanres"></div>
+  <div class="presets" id="presets"></div>
+  <button class="btn glow" id="go">OTIMIZAR TUDO</button>
+  <div class="log" id="log"></div>
+  <div class="sec"><span>VARREDURA</span><span id="cnt"></span></div>
+  <div class="grid">
+   <div class="card"><div>💾</div><div class="l">ARMAZENAMENTO</div><div class="v">48 / 64 GB</div><div class="bar"><i style="width:75%"></i></div></div>
+   <div class="card"><div>🌡️</div><div class="l">TEMPERATURA</div><div class="v" id="temp">38.5 °C</div></div>
+   <div class="card"><div>⚡</div><div class="l">ESTADO TÉRMICO</div><div class="v">Normal</div></div>
+   <div class="card"><div>📺</div><div class="l">TAXA DA TELA</div><div class="v" id="hz">60 Hz</div></div>
+   <div class="card"><div>🧠</div><div class="l">NÚCLEOS DE CPU</div><div class="v" id="cc">8</div></div>
+   <div class="card"><div>🧩</div><div class="l">RAM TOTAL</div><div class="v" id="rt">6.0 GB</div></div>
+  </div>
+  <div class="alert" id="alert">⚠️ Muitos apps abertos em segundo plano. Toque em OTIMIZAR TUDO antes de jogar.</div>
+ </section>
+ <!-- AJUSTES -->
+ <section class="tab" id="t1">
+  <div class="brand">AJUSTES SHIZUKU</div><div class="dev">Controle total</div>
+  <div class="note" style="text-align:left;margin:6px 0 0">Toque para ligar ou desligar. O comando que o app roda aparece embaixo de cada opção.</div>
+  <div id="opts"></div>
+ </section>
+ <!-- JOGO -->
+ <section class="tab" id="t2">
+  <div class="brand" id="gname">FREE FIRE</div><div class="dev">Modo jogo</div>
+  <div class="games" id="games"></div>
+  <div class="badges"><span class="b ok" id="gpkg">com.dts.freefireth</span><span class="b hot">Alta prioridade</span></div>
+  <div id="gopts" style="margin-top:12px"></div>
+  <button class="btn" id="play" style="margin-top:8px">⚡ ENTRAR NO JOGO</button>
+  <div class="note" id="playmsg">Aplica os ajustes do jogo escolhido e abre ele.</div>
+ </section>
+</div>
+
+<nav id="nav"><button class="on" data-t="0"><span>🏠</span>PAINEL</button><button data-t="1"><span>🛠️</span>AJUSTES</button><button data-t="2"><span>🎮</span>JOGO</button></nav>
+
+<script>
+var FF='com.dts.freefireth';
+var O=[
+{id:'kill',g:'MEMÓRIA E APPS',ic:'🧹',n:'Fechar apps em segundo plano',d:'Libera RAM de tudo que não está em uso',c:'am kill-all',lv:1},
+{id:'stop',g:'MEMÓRIA E APPS',ic:'💀',n:'Forçar parada de apps pesados',d:'Para redes sociais, lojas e streaming',c:'am force-stop <pacote>',lv:2},
+{id:'cache',g:'MEMÓRIA E APPS',ic:'🗑️',n:'Limpar cache de todos os apps',d:'Apaga cache e libera armazenamento',c:'pm trim-caches 999G',lv:1},
+{id:'bgl',g:'MEMÓRIA E APPS',ic:'📉',n:'Limite de processos em segundo plano',d:'Menos processos, mais RAM livre',c:'settings put global background_process_limit',ch:['Padrão','4','2','1'],lv:3},
+{id:'sync',g:'MEMÓRIA E APPS',ic:'🔕',n:'Bloquear dados em segundo plano',d:'Apps não usam internet escondidos',c:'cmd netpolicy set restrict-background true',lv:3},
+{id:'trim',g:'MEMÓRIA E APPS',ic:'🫧',n:'Pedir aos apps para liberar memória',d:'Força os apps a soltarem RAM sem fechar',c:'am send-trim-memory <pacote> RUNNING_CRITICAL',lv:1},
+{id:'bgop',g:'MEMÓRIA E APPS',ic:'🚫',n:'Proibir apps de rodar escondidos',d:'Bloqueia execução em segundo plano dos apps comuns',c:'cmd appops set <pacote> RUN_IN_BACKGROUND ignore',lv:3},
+{id:'trimfs',g:'MEMÓRIA E APPS',ic:'✂️',n:'Otimizar o armazenamento (TRIM)',d:'Deixa a memória interna mais rápida',c:'sm idle-maint run',lv:2},
+{id:'dexjob',g:'MEMÓRIA E APPS',ic:'📦',n:'Otimizar todos os apps instalados',d:'Roda a compilação em segundo plano do sistema',c:'cmd package bg-dexopt-job',lv:3},
+{id:'idle',g:'MEMÓRIA E APPS',ic:'💤',n:'Colocar apps ociosos para dormir',d:'Apps parados deixam de gastar RAM e CPU',c:'am set-inactive <pacote> true',lv:2},
+{id:'perf',g:'DESEMPENHO',ic:'🚀',n:'Modo desempenho fixo da CPU',d:'Mantém o processador em alta',c:'cmd power set-fixed-performance-mode-enabled true',lv:2},
+{id:'bat',g:'DESEMPENHO',ic:'🔋',n:'Desligar economia de bateria',d:'Tira o limite de CPU e rede',c:'settings put global low_power 0',lv:1},
+{id:'adp',g:'DESEMPENHO',ic:'🧠',n:'Desligar bateria adaptativa',d:'O sistema para de segurar apps',c:'settings put global adaptive_battery_management_enabled 0',lv:2},
+{id:'fin',g:'DESEMPENHO',ic:'♻️',n:'Manter atividades em memória',d:'Desativa "não manter atividades"',c:'settings put global always_finish_activities 0',lv:1},
+{id:'therm',g:'DESEMPENHO',ic:'🌡️',n:'Aliviar limite térmico',d:'Cuidado: o celular pode esquentar mais',c:'cmd thermalservice override-status 0',lv:3,w:1},
+{id:'aps',g:'DESEMPENHO',ic:'⚡',n:'Desligar economia adaptativa de energia',d:'Impede o sistema de reduzir desempenho sozinho',c:'cmd power set-adaptive-power-saver-enabled false',lv:2},
+{id:'dzoff',g:'DESEMPENHO',ic:'⏰',n:'Desativar o modo Doze',d:'O sistema não suspende mais os apps',c:'dumpsys deviceidle disable',lv:3},
+{id:'gpur',g:'DESEMPENHO',ic:'🎨',n:'Renderizador gráfico Vulkan',d:'Interface e jogos mais fluidos (pode variar)',c:'setprop debug.hwui.renderer skiavk',lv:3,w:1},
+{id:'gdrv',g:'DESEMPENHO',ic:'🎮',n:'Driver de GPU atualizado para jogos',d:'Usa o driver gráfico mais novo nos apps',c:'settings put global game_driver_all_apps 1',lv:2},
+{id:'sem',g:'DESEMPENHO',ic:'📲',n:'CPU mais responsiva (Samsung)',d:'Só funciona em aparelhos Samsung',c:'settings put global sem_enhanced_cpu_responsiveness 1',lv:3},
+{id:'anim',g:'TELA E TOQUE',ic:'🎞️',n:'Velocidade das animações',d:'Menos animação, sistema mais rápido',c:'settings put global window_animation_scale',ch:['1x','0.5x','0x'],lv:1,def:1},
+{id:'hz',g:'TELA E TOQUE',ic:'📺',n:'Taxa de atualização da tela',d:'Trava a tela na maior taxa',c:'settings put system min_refresh_rate',ch:['60','90','120'],lv:2,def:2},
+{id:'br',g:'TELA E TOQUE',ic:'☀️',n:'Brilho automático desligado',d:'Evita oscilação de brilho no jogo',c:'settings put system screen_brightness_mode 0',lv:3},
+{id:'touch',g:'TELA E TOQUE',ic:'👆',n:'Toque mais rápido',d:'Reduz o tempo de toque longo',c:'settings put secure long_press_timeout 250',lv:2},
+{id:'trans',g:'TELA E TOQUE',ic:'🌀',n:'Transições de janela desligadas',d:'Abrir e fechar telas sem espera',c:'settings put global transition_animation_scale 0',lv:1},
+{id:'dur',g:'TELA E TOQUE',ic:'⏩',n:'Duração das animações em zero',d:'Elementos aparecem na hora',c:'settings put global animator_duration_scale 0',lv:2},
+{id:'ptr',g:'TELA E TOQUE',ic:'🖱️',n:'Velocidade do toque no máximo',d:'Resposta mais rápida do ponteiro',c:'settings put system pointer_speed 7',lv:2},
+{id:'hap',g:'TELA E TOQUE',ic:'📳',n:'Vibração do toque desligada',d:'Menos atraso e economia de energia',c:'settings put system haptic_feedback_enabled 0',lv:3},
+{id:'aod',g:'TELA E TOQUE',ic:'🌙',n:'Tela sempre ativa desligada',d:'Menos uso de CPU com a tela apagada',c:'settings put secure doze_always_on 0',lv:3},
+{id:'wm',g:'TELA E TOQUE',ic:'📐',n:'Reduzir a resolução da tela',d:'Mais FPS em jogos pesados (a imagem fica menos nítida)',c:'wm size <resolução>',ch:['Padrão','90%','80%'],lv:3,w:1},
+{id:'wifi',g:'REDE',ic:'📶',n:'Wi-Fi de baixa latência',d:'Menos ping durante a partida',c:'cmd wifi force-low-latency-mode enabled',lv:1},
+{id:'scan',g:'REDE',ic:'📡',n:'Parar buscas de Wi-Fi e Bluetooth',d:'Menos interferência e consumo',c:'settings put global wifi_scan_always_enabled 0',lv:2},
+{id:'dnd',g:'REDE',ic:'🔇',n:'Não perturbe durante o jogo',d:'Sem notificações atrapalhando',c:'cmd notification set_dnd priority',lv:2},
+{id:'dns',g:'REDE',ic:'🌐',n:'DNS privado rápido (Cloudflare)',d:'Resolve endereços mais rápido',c:'settings put global private_dns_mode hostname; settings put global private_dns_specifier one.one.one.one',lv:2},
+{id:'mda',g:'REDE',ic:'📵',n:'Dados móveis desligados no Wi-Fi',d:'Evita troca de rede no meio da partida',c:'settings put global mobile_data_always_on 0',lv:2},
+{id:'wnn',g:'REDE',ic:'🔔',n:'Sem aviso de redes Wi-Fi',d:'Para as buscas e avisos de redes abertas',c:'settings put global wifi_networks_available_notification_on 0',lv:3},
+{id:'nfc',g:'REDE',ic:'💳',n:'Desligar o NFC',d:'Um serviço a menos rodando',c:'svc nfc disable',lv:3},
+{id:'gps',g:'REDE',ic:'📍',n:'Desligar a localização (GPS)',d:'Economiza CPU e bateria',c:'cmd location set-location-enabled false',lv:3,w:1},
+{id:'log',g:'SISTEMA',ic:'📝',n:'Reduzir os registros do sistema',d:'Menos escrita e menos uso de memória',c:'logcat -G 64K',lv:2},
+{id:'stay',g:'SISTEMA',ic:'🔌',n:'Tela ligada enquanto estiver no cabo',d:'A tela não apaga durante o jogo carregando',c:'svc power stayon usb',lv:2},
+{id:'scr',g:'SISTEMA',ic:'⏱️',n:'Tempo de tela maior',d:'Tela fica 10 minutos acesa',c:'settings put system screen_off_timeout 600000',lv:2},
+{id:'frz',g:'SISTEMA',ic:'🧊',n:'Congelar apps que você não usa',d:'Desativa o app sem desinstalar',c:'pm disable-user --user 0 <pacote>',lv:3,w:1},
+{id:'bgm',g:'SISTEMA',ic:'🎵',n:'Pausar apps de mídia em segundo plano',d:'Fecha players e vídeos escondidos',c:'cmd media_session dispatch stop',lv:3},
+{id:'ffm',g:'FREE FIRE',gm:1,ic:'🔥',n:'Modo desempenho no Free Fire',d:'Perfil de jogo do Android em desempenho',c:'cmd game mode performance '+FF,lv:1},
+{id:'doze',g:'FREE FIRE',gm:1,ic:'🛡️',n:'Proteger o Free Fire do Doze',d:'O sistema nunca suspende o jogo',c:'dumpsys deviceidle whitelist +'+FF,lv:1},
+{id:'bkt',g:'FREE FIRE',gm:1,ic:'⭐',n:'Prioridade máxima (standby ativo)',d:'Jogo sempre tratado como app ativo',c:'am set-standby-bucket '+FF+' active',lv:1},
+{id:'dex',g:'FREE FIRE',gm:1,ic:'⚙️',n:'Compilar o jogo em modo velocidade',d:'Abre e roda mais rápido (demora um pouco)',c:'cmd package compile -m speed -f '+FF,lv:2},
+{id:'ffps',g:'FREE FIRE',gm:1,ic:'🎯',n:'Fixar os FPS do jogo',d:'Pede ao sistema o máximo de quadros',c:'cmd game set --mode 2 --fps <valor> '+FF,ch:['60','90','120'],lv:2,def:2},
+{id:'ffbg',g:'FREE FIRE',gm:1,ic:'🔓',n:'Free Fire sem restrição de segundo plano',d:'O sistema não limita o jogo',c:'am set-bg-restriction-level --user 0 '+FF+' unrestricted',lv:1},
+{id:'ffop',g:'FREE FIRE',gm:1,ic:'🧷',n:'Manter o jogo sempre ativo',d:'Evita que o jogo seja marcado como inativo',c:'am set-inactive '+FF+' false',lv:1},
+{id:'ffrun',g:'FREE FIRE',gm:1,ic:'🏃',n:'Permitir rodar em segundo plano',d:'Volta para a partida sem recarregar',c:'cmd appops set '+FF+' RUN_IN_BACKGROUND allow',lv:2}
+];
+O=O.filter(function(o){return o.id!=='bgl'});
+var MINAPI={perf:31,adp:28,therm:30,wifi:30,ffm:31,ffps:31,ffbg:33,bkt:28,trimfs:26,dexjob:26,aps:30,gpur:29,gdrv:29,aod:28,dns:28,gps:30,sync:24,dex:24,wm:24,nfc:24};
+var AV={24:'7',26:'8',28:'9',29:'10',30:'11',31:'12',33:'13',34:'14'};
+var DEV={};
+function detect(){var ua=navigator.userAgent;
+ if(ua.indexOf('Android ')>-1){var p=ua.split('Android ')[1],v=p.split(';')[0],mj=parseInt(v),md=(p.split(';')[1]||'Android').split(')')[0].split(' Build')[0].trim();
+  var api={8:26,9:28,10:29,11:30,12:31,13:33,14:34,15:35,16:36}[mj]||(mj>16?36:26);
+  DEV={model:md,brand:md.indexOf('SM-')===0?'Samsung':md.indexOf('Pixel')===0?'Google':'',api:api,android:v,real:true}}
+ else DEV={model:'Galaxy A54 (simulado)',brand:'Samsung',api:34,android:'14',real:false};
+ DEV.cores=Math.min(navigator.hardwareConcurrency||8,8);DEV.ram=navigator.deviceMemory||6;DEV.hz=60}
+function na(o){if(!o)return false;if(DEV.api<(MINAPI[o.id]||23))return true;if(o.id==='sem'&&DEV.brand!=='Samsung')return true;return false}
+function NAid(id){return na(O.filter(function(o){return o.id===id})[0])}
+function tag(o){var m=MINAPI[o.id],t='';if(o.id==='sem')t=' <span class="tag">Só Samsung</span>';else if(m&&AV[m])t=' <span class="tag">Android '+AV[m]+'+</span>';return t}
+function prof(){return DEV.ram<=4||DEV.cores<=4?'Entrada':DEV.ram<=8?'Intermediário':'Forte'}
+function plan(){var l=prof()==='Entrada'?3:2,hi=DEV.hz>=120?2:DEV.hz>=90?1:0;O.forEach(function(o){var s=S[o.id];s.on=!na(o)&&!o.w&&o.lv<=l;if(o.ch)s.ch=(o.id==='hz'||o.id==='ffps')?hi:(o.id==='anim'?(l===3?2:1):1)})}
+function mh(){return new Promise(function(r){var n=0,t0=performance.now();(function f(t){n++;if(t-t0<700)requestAnimationFrame(f);else{var fps=n*1000/(t-t0);r(fps>100?120:fps>75?90:60)}})(t0)})}
+var GM=[{e:'🔥',name:'Free Fire',pkg:'com.dts.freefireth'},{e:'🧱',name:'Roblox',pkg:'com.roblox.client'},{e:'🔫',name:'Call of Duty Mobile',pkg:'com.activision.callofduty.shooter'},{e:'⛏️',name:'Minecraft',pkg:'com.mojang.minecraftpe'},{e:'🩸',name:'Blood Strike',pkg:'com.netease.newspike'}];
+var G=GM[0];
+function gt(s){return s.split(FF).join(G.pkg).split('Free Fire').join(G.name)}
+function gm(o){return Object.assign({},o,{n:gt(o.n),d:gt(o.d),c:gt(o.c)})}
+var S={};O.forEach(function(o){S[o.id]={on:false,ch:o.def||0}});
+var $=function(i){return document.getElementById(i)};
+function rip(e,el){var r=el.getBoundingClientRect(),s=Math.max(r.width,r.height)*2,p=document.createElement('span');p.className='rp';p.style.cssText='width:'+s+'px;height:'+s+'px;left:'+(e.clientX-r.left-s/2)+'px;top:'+(e.clientY-r.top-s/2)+'px';el.appendChild(p);setTimeout(function(){p.remove()},620)}
+document.addEventListener('pointerdown',function(e){var el=e.target.closest('.btn,.pre,.row,.chip,.gm,nav button');if(el){rip(e,el);if(navigator.vibrate)navigator.vibrate(12)}});
+function render(){
+ var a='',b='',cur='';
+ O.forEach(function(o0){var o=o0.gm?gm(o0):o0;
+  var s=S[o.id],h='';
+  if(o.ch){h='<div class="crow'+(o.w?' warn':'')+(na(o)?' na':'')+'"><div style="display:flex;gap:12px"><span class="ic" style="font-size:22px">'+o.ic+'</span><div><div class="t" style="font-weight:700;font-size:14px">'+o.n+'</div><div class="d" style="font-size:11.5px;color:var(--mute)">'+o.d+'</div></div></div><div class="chips">'+o.ch.map(function(c,i){return '<div class="chip'+(s.on&&s.ch===i?' on':'')+'" data-id="'+o.id+'" data-i="'+i+'">'+c+'</div>'}).join('')+'</div></div>'}
+  else h='<div class="row'+(s.on?' on':'')+(o.w?' warn':'')+(na(o)?' na':'')+'" data-id="'+o.id+'"><span class="ic">'+o.ic+'</span><div class="tx"><div class="t">'+o.n+tag(o)+'</div><div class="d">'+o.d+'</div><code>'+o.c+'</code></div><div class="sw"></div></div>';
+  if(o.gm)b+=h;else{if(o.g!==cur){cur=o.g;a+='<div class="sec"><span>'+cur+'</span></div>'}a+=h}
+ });
+ $('opts').innerHTML=a;$('gopts').innerHTML=b;
+ var n=O.filter(function(o){return S[o.id].on}).length;$('cnt').textContent=n+' de '+O.length+' ajustes ativos';
+ var rows=document.querySelectorAll('[data-id]');
+}
+function tog(id){S[id].on=!S[id].on;preset(0);render()}
+document.addEventListener('click',function(e){
+ var c=e.target.closest('.chip');if(c){if(NAid(c.dataset.id))return;var s=S[c.dataset.id],i=+c.dataset.i;if(s.on&&s.ch===i)s.on=false;else{s.on=true;s.ch=i}preset(0);render();return}
+ var r=e.target.closest('.row');if(r&&!NAid(r.dataset.id))tog(r.dataset.id);
+});
+var P=[['⚖️ Equilibrado',1],['🔥 Turbo',2],['💥 Insano',3]];
+$('presets').innerHTML=P.map(function(p,i){return '<button class="pre" data-p="'+(i+1)+'">'+p[0]+'</button>'}).join('');
+function preset(l){document.querySelectorAll('.pre').forEach(function(b){b.classList.toggle('on',+b.dataset.p===l)})}
+document.querySelectorAll('.pre').forEach(function(b){b.onclick=function(){var l=+b.dataset.p;O.forEach(function(o){var s=S[o.id];s.on=o.lv<=l&&!na(o);if(o.ch)s.ch=o.id==='bgl'?(l===3?3:2):(o.id==='anim'?(l===3?2:1):(l===3?2:1))});render();preset(l)}});
+$('nav').onclick=function(e){var b=e.target.closest('button');if(!b)return;document.querySelectorAll('nav button').forEach(function(x){x.classList.toggle('on',x===b)});document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('on',i==b.dataset.t)});window.scrollTo({top:0,behavior:'smooth'})};
+var TOTAL=6,free=1.6,C=540.4,ring=$('ring'),gb=$('gb'),st=$('state');
+function setRam(v,ms){var f0=parseFloat(gb.textContent)||0,t0=performance.now();(function f(t){var p=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-p,3),c=f0+(v-f0)*e;gb.textContent=c.toFixed(1);ring.style.strokeDashoffset=C*(1-c/TOTAL);if(p<1)requestAnimationFrame(f)})(t0);st.textContent=v>=3.5?'RAM ÓTIMA':v>=2.5?'RAM BOA':'RAM BAIXA';st.className='state'+(v>=2.5?' good':'')}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+async function run(list,logEl){
+ logEl.innerHTML=list.map(function(o,i){return '<div class="step" id="s'+i+'"><span>'+o.ic+' '+o.n+'</span><span class="st">•••</span></div>'}).join('');
+ for(var i=0;i<list.length;i++){var el=$('s'+i);el.className='step run';await wait(420);el.className='step done';el.querySelector('.st').textContent='✓'}
+}
+$('go').onclick=async function(){
+ var L=O.filter(function(o){return S[o.id].on}).map(function(o){return o.gm?gm(o):o});
+ if(!L.length){$('gain').textContent='Escolha um modo ou ligue ajustes';$('gain').classList.add('on');setTimeout(function(){$('gain').classList.remove('on')},1800);return}
+ var b=$('go');b.disabled=true;b.classList.remove('glow');b.textContent='Otimizando...';$('gain').classList.remove('on');
+ await run(L,$('log'));
+ var add=0.2+L.length*0.11;var nf=Math.min(TOTAL-0.7,free+add),d=nf-free;free=nf;setRam(free,1600);
+ $('gain').textContent='+'+d.toFixed(1)+' GB liberados · '+L.length+' ajustes aplicados';$('gain').classList.add('on');
+ $('alert').style.display='none';$('temp').textContent='36.2 °C';
+ if(S.hz.on)$('hz').textContent=['60','90','120'][S.hz.ch]+' Hz';
+ b.disabled=false;b.classList.add('glow');b.textContent='OTIMIZAR DE NOVO';
+};
+$('play').onclick=async function(){
+ var L=O.filter(function(o){return o.gm}).map(gm);L.forEach(function(o){S[o.id].on=true});render();
+ var b=$('play');b.disabled=true;b.textContent='Preparando...';
+ var lg=document.createElement('div');lg.className='log';lg.id='plog';$('playmsg').before(lg);
+ await run(L,lg);b.disabled=false;b.textContent='⚡ ENTRAR NO JOGO';$('playmsg').textContent='Pronto! No app real, '+G.name+' abre agora.';
+};
+function kv(a,b){return '<div class="kv"><span>'+a+'</span><b>'+b+'</b></div>'}
+function dev(){$('dname').textContent=DEV.model;$('pfl').textContent='Perfil: '+prof();$('hz').textContent=DEV.hz+' Hz';$('rt').textContent=DEV.ram.toFixed(1)+' GB';$('cc').textContent=DEV.cores;TOTAL=DEV.ram;free=Math.min(free,TOTAL-0.8)}
+async function scan(){var b=$('scan'),r=$('scanres');b.disabled=true;b.textContent='Analisando...';
+ var st=['Identificando o aparelho','Lendo Android e processador','Medindo RAM e armazenamento','Medindo a taxa da tela','Testando a permissão do Shizuku','Procurando jogos instalados','Conferindo a compatibilidade dos comandos'];
+ r.innerHTML='<div class="log">'+st.map(function(s,i){return '<div class="step" id="c'+i+'"><span>'+s+'</span><span class="st">•••</span></div>'}).join('')+'</div>';
+ for(var i=0;i<st.length;i++){var e=$('c'+i);e.className='step run';if(i===3)DEV.hz=await mh();else await wait(380);e.className='step done';e.querySelector('.st').textContent='✓'}
+ var h=DEV.hz;detect();DEV.hz=h;dev();setRam(free,900);render();
+ var sk=O.filter(na);
+ r.innerHTML='<div class="res"><div class="rh">📱 '+DEV.model+'</div>'+kv('Android',DEV.android+' (API '+DEV.api+')')+kv('Processador',DEV.cores+' núcleos')+kv('RAM',DEV.ram+' GB')+kv('Tela',DEV.hz+' Hz')+kv('Perfil',prof())+kv('Shizuku','Ativo (simulado)')+kv('Comandos compatíveis',(O.length-sk.length)+' de '+O.length)+(sk.length?'<div class="skip">Ignorados neste aparelho: '+sk.map(function(o){return o.n}).slice(0,6).join(', ')+(sk.length>6?'...':'')+'</div>':'')+(DEV.real?'':'<div class="skip">Dados simulados nesta prévia. No app, vêm do próprio celular.</div>')+'<button class="btn" id="apply" style="margin-top:12px">⚡ APLICAR PLANO PARA O MEU CELULAR</button></div>';
+ $('apply').onclick=function(){plan();render();preset(0);$('go').onclick()};
+ b.disabled=false;b.textContent='🔍 VARREDURA COMPLETA'}
+$('scan').onclick=scan;
+function games(){$('games').innerHTML=GM.map(function(g,i){return '<div class="gm'+(g===G?' on':'')+'" data-g="'+i+'"><span>'+g.e+'</span><b>'+g.name+'</b></div>'}).join('');$('gname').textContent=G.name.toUpperCase();$('gpkg').textContent=G.pkg}
+document.addEventListener('click',function(e){var g=e.target.closest('.gm');if(!g)return;G=GM[+g.dataset.g];games();render();var pl=$('plog');if(pl)pl.remove();$('playmsg').textContent='Aplica os ajustes do jogo escolhido e abre ele.'});
+detect();dev();games();render();
+setTimeout(function(){$('intro').classList.add('out');setRam(free,1700)},2700);
+$('intro').onclick=function(){this.classList.add('out');setRam(free,1700)};
+// rastro do dedo
+var cv=$('trail'),cx=cv.getContext('2d'),pts=[];
+function rs(){cv.width=innerWidth;cv.height=innerHeight}rs();addEventListener('resize',rs);
+function add(e){pts.push({x:e.clientX,y:e.clientY,l:1,r:7+Math.random()*5})}
+addEventListener('pointermove',function(e){if(e.pressure>0||e.buttons||e.pointerType==='touch')add(e)});
+addEventListener('pointerdown',function(e){for(var i=0;i<8;i++)pts.push({x:e.clientX+(Math.random()-.5)*30,y:e.clientY+(Math.random()-.5)*30,l:1,r:5+Math.random()*6})});
+(function loop(){cx.clearRect(0,0,cv.width,cv.height);cx.globalCompositeOperation='lighter';
+ pts=pts.filter(function(p){return p.l>0.02});
+ pts.forEach(function(p){p.l*=.92;var g=cx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.2);g.addColorStop(0,'rgba(255,255,255,'+p.l+')');g.addColorStop(1,'rgba(255,45,61,0)');cx.fillStyle=g;cx.beginPath();cx.arc(p.x,p.y,p.r*2.2,0,6.3);cx.fill()});
+ requestAnimationFrame(loop)})();
+</script>
+</body>
+</html>
